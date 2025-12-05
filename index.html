@@ -2,417 +2,662 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>我的展示页面</title>
+  <title>Apple 风滚动展示页</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* 全局样式 */
     * {
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #f5f5f7;
-      color: #222;
-      line-height: 1.6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
     }
 
-    a {
-      text-decoration: none;
-      color: inherit;
+    .page {
+      width: 100%;
+      min-height: 100vh;
     }
 
-    img {
-      max-width: 100%;
-      display: block;
+    /* ===== 通用每一幕（除第二幕特殊） ===== */
+    .panel {
+      position: relative;
+      height: 100vh; /* 一屏高度 */
+      width: 100%;
+      /* ⚠️ 这里去掉 overflow: hidden，保证 sticky 的第二幕能正常锁住画面 */
+      /* overflow: hidden; */
+      /* 可调变量：阴影占比（宽度或高度） */
+      --overlay-width: 45%;   /* 水平遮罩展开到的宽度 */
+      --overlay-height: 45%;  /* 垂直遮罩展开到的高度 */
     }
 
-    /* 页面整体宽度控制 */
-    .container {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
+        /* 背景图层（恢复为 cover 效果：铺满屏幕，必要时会裁切） */
+    .panel-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;     /* ✅ 关键：改回 cover */
+      background-position: center;
+      transform: scale(1.05);     /* 轻微放大一点，有那种“镜头感” */
+      transition: transform 1s ease;
     }
 
-    /* 顶部导航 / 标题区 */
-    header {
+
+    /* 单独控制每一张图对焦点（如果想微调居中位置可以改这里） */
+
+    /* 第二幕（scene1）：竖图，主要滚动由 JS 控制 background-position-Y*/
+    .bg-scene1 {
+      background-position: 50% 0%; /* 初始展示图片上半部分（上缘更靠上） */
+    }
+
+    /* 第三幕（scene2） */
+    .bg-scene2 {
+      background-position: 50% 50%;
+    }
+
+    /* 第四幕（scene3） */
+    .bg-scene3 {
+      background-position: 50% 50%;
+    }
+
+    /* 第五幕（scene4） */
+    .bg-scene4 {
+      background-position: 50% 50%;
+    }
+
+    /* 第六幕（scene5） */
+    .bg-scene5 {
+      background-position: 50% 50%;
+    }
+
+    /* 第七幕（scene6） */
+    .bg-scene6 {
+      background-position: 50% 50%;
+    }
+
+    /* 整体压暗的柔和蒙版 */
+    .panel-overlay-dim {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.2), #000);
+      opacity: 0.7;
+    }
+
+    /* ===== 水平遮罩基类：左 / 右 渐变，用 width 控制阴影区域大小 ===== */
+    .overlay-horizontal {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 0;  /* 初始 0，激活时展开到 var(--overlay-width) */
+      transition: width 1s ease;
+      pointer-events: none;
+    }
+
+    /* 阴影从左到右扩散：
+       黑色在 left，往右渐淡
+    */
+    .overlay-left {
+      left: 0;
+      background: linear-gradient(
+        to right,
+        #000,
+        rgba(0, 0, 0, 0.7),
+        rgba(0, 0, 0, 0.3),
+        transparent
+      );
+    }
+
+    /* 阴影从右到左扩散：
+       黑色在 right，往左渐淡
+    */
+    .overlay-right {
+      right: 0;
+      background: linear-gradient(
+        to left,
+        #000,
+        rgba(0, 0, 0, 0.7),
+        rgba(0, 0, 0, 0.3),
+        transparent
+      );
+    }
+
+    /* ===== 垂直遮罩基类：上 / 下 渐变，用 height 控制阴影区域大小 ===== */
+    .overlay-vertical {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 0;  /* 初始 0，激活时展开到 var(--overlay-height) */
+      transition: height 1s ease;
+      pointer-events: none;
+    }
+
+    /* 阴影从上向下扩散 */
+    .overlay-top {
+      top: 0;
+      background: linear-gradient(
+        to bottom,
+        #000,
+        rgba(0, 0, 0, 0.8),
+        rgba(0, 0, 0, 0.4),
+        transparent
+      );
+    }
+
+    /* 阴影从下向上扩散（本版本未用，可保留） */
+    .overlay-bottom {
+      bottom: 0;
+      background: linear-gradient(
+        to top,
+        #000,
+        rgba(0, 0, 0, 0.8),
+        rgba(0, 0, 0, 0.4),
+        transparent
+      );
+    }
+
+    /* 中心水平扩散遮罩：第七幕用，从中间向两侧扩散 */
+    .overlay-center-horizontal {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 0;  /* 初始 0，激活时展开到 var(--overlay-width) */
+      transform: translateX(-50%);
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.9), #000);
+      transition: width 1s ease;
+      pointer-events: none;
+    }
+
+    /* 文字容器（通用） */
+    .panel-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      padding: 0 10vw;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0 16px;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    .logo {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+    .panel-text-box {
+      max-width: 520px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.9s ease, transform 0.9s ease;
     }
 
-    .nav {
-      display: flex;
-      gap: 16px;
-      font-size: 14px;
-      color: #555;
-    }
-
-    .nav a:hover {
-      color: #111;
-    }
-
-    /* Hero 主视觉区：大图 + 文案 */
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: 24px;
-      align-items: center;
-      padding: 24px 0 32px;
-    }
-
-    .hero-text {
-      padding-right: 8px;
-    }
-
-    .hero-title {
-      font-size: 32px;
+    .panel-text-box h1,
+    .panel-text-box h2 {
+      font-size: clamp(32px, 5vw, 52px);
       font-weight: 700;
       margin-bottom: 16px;
     }
 
-    .hero-subtitle {
-      font-size: 16px;
-      color: #555;
-      margin-bottom: 20px;
+    .panel-text-box p {
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.7;
+      color: #e5e5e5;
     }
 
-    .hero-buttons {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-      padding: 10px 18px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: none;
-    }
-
-    .btn-primary {
-      background: #111827;
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background: #000;
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      border-color: #d4d4d8;
-      color: #444;
-      background: #fff;
-    }
-
-    .btn-secondary:hover {
-      border-color: #a1a1aa;
-      transform: translateY(-1px);
-    }
-
-    .hero-note {
-      font-size: 12px;
-      color: #888;
-    }
-
-    .hero-image-wrapper {
-      background: #fff;
-      border-radius: 18px;
-      padding: 14px;
-      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
-    }
-
-    .hero-image {
-      border-radius: 14px;
-      overflow: hidden;
-    }
-
-    .hero-tag {
-      position: relative;
-      margin-top: 10px;
-      font-size: 12px;
-      color: #666;
-      padding-left: 10px;
-    }
-
-    .hero-tag::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 7px;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #22c55e;
-    }
-
-    /* Section 标题 */
-    .section {
-      margin-top: 36px;
-    }
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .section-subtitle {
+    .panel-text-box .sub {
       font-size: 13px;
-      color: #777;
-      margin-bottom: 18px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      margin-bottom: 8px;
     }
 
-    /* 三列卡片区：图 + 文案 */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 14px;
-      box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .card-image {
-      border-radius: 12px;
-      overflow: hidden;
-      height: 150px;
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .card-text {
-      font-size: 13px;
-      color: #666;
-    }
-
-    /* 图 + 文组合区 */
-    .image-text {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 20px;
+    /* intro 视频那一幕：文字居中 */
+    .panel.intro .panel-content {
       align-items: center;
-      margin-top: 12px;
+      text-align: center;
+      padding: 0 6vw;
     }
 
-    .image-text-block {
-      background: #fff;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    .panel.intro .panel-text-box {
+      max-width: 640px;
     }
 
-    .image-text-title {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 10px;
+    /* 左/右/中 布局控制 —— 文字位置在这里调 */
+    .panel-left .panel-content {
+      align-items: flex-start;   /* 左对齐 */
+      text-align: left;
     }
 
-    .image-text-body {
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 10px;
+    .panel-right .panel-content {
+      align-items: flex-end;     /* 右对齐 */
+      text-align: right;
     }
 
-    .image-text-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .tag {
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #f4f4f5;
-      color: #555;
-    }
-
-    /* 页脚 */
-    footer {
-      margin-top: 40px;
-      padding-top: 16px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 12px;
-      color: #888;
+    .panel-center .panel-content {
+      align-items: center;       /* 居中 */
       text-align: center;
     }
 
-    /* 响应式：在手机上变成单列布局 */
+    /* 激活后的通用动画 */
+    .panel.active .overlay-horizontal {
+      width: var(--overlay-width);
+    }
+
+    .panel.active .overlay-vertical {
+      height: var(--overlay-height);
+    }
+
+    .panel.active .overlay-center-horizontal {
+      width: var(--overlay-width);
+    }
+
+    .panel.active .panel-text-box {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 滚动提示 */
+    .scroll-tip {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #9ca3af;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      z-index: 3;
+    }
+
+    .scroll-tip span {
+      font-size: 18px;
+    }
+
+    /* ===== 第一幕：视频容器 ===== */
+    .hero-video-wrapper {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .hero-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 保持比例铺满 */
+    }
+
+    /* ===== 第二幕：竖图 + sticky + 自定义滚动逻辑 ===== */
+    .second-panel {
+      height: 300vh;   /* 整个 section 高度拉长，方便做“三屏内滚动”效果 */
+      overflow: visible; /* ⚠️ 确保 sticky 有效，且内部不会被裁掉 */
+    }
+
+    .second-panel-inner {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden; /* 内层负责裁图片边缘，外层不裁 */
+    }
+
+    /* 第二幕里的背景图、遮罩相对于 inner 来定位 */
+    .second-panel-inner .panel-bg,
+    .second-panel-inner .panel-overlay-dim,
+    .second-panel-inner .overlay-vertical {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* 第二幕文字：由 JS 控制透明度，这里取消 transition 避免打架 */
+    .second-panel .panel-text-box {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: none;
+    }
+
+    /* 适配手机：加大遮罩、文本更贴边一点 */
     @media (max-width: 768px) {
-      .hero {
-        grid-template-columns: 1fr;
+      .panel-content {
+        padding: 0 6vw;
       }
 
-      .hero-text {
-        order: 2;
+      .panel {
+        --overlay-width: 60%;
+        --overlay-height: 60%;
       }
 
-      .hero-image-wrapper {
-        order: 1;
-      }
-
-      .card-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .image-text {
-        grid-template-columns: 1fr;
+      .panel-left .panel-content,
+      .panel-right .panel-content {
+        align-items: flex-start;
+        text-align: left;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- 顶部 -->
-    <header>
-      <div class="logo">MY PAGE</div>
-      <nav class="nav">
-        <a href="#about">关于</a>
-        <a href="#works">作品</a>
-        <a href="#contact">联系</a>
-      </nav>
-    </header>
+  <div class="page">
 
-    <!-- 主视觉区 -->
-    <section class="hero" id="about">
-      <div class="hero-text">
-        <h1 class="hero-title">这里是你的标题文案区域</h1>
-        <p class="hero-subtitle">
-          用一两段简短的文字介绍你自己 / 你的项目 / 你想展示的内容。
-          比如：这个网页用来展示我的设计作品、科研项目或者课程信息。
-        </p>
-        <div class="hero-buttons">
-          <button class="btn-primary">主要按钮</button>
-          <button class="btn-secondary">次要按钮</button>
-        </div>
-        <p class="hero-note">
-          提示文案：你可以在这里放一句小提示，比如“向下滑查看更多内容”。
-        </p>
+    <!-- 第一幕：视频 -->
+    <section class="panel intro" id="top">
+      <div class="hero-video-wrapper">
+        <video
+          id="heroVideo"
+          class="hero-video"
+          src="images/1.mp4"
+          muted
+          playsinline
+        ></video>
       </div>
 
-      <div class="hero-image-wrapper">
-        <!-- 把 src 替换成你的大图，比如 hero.jpg -->
-        <div class="hero-image">
-          <img src="images/hero.jpg" alt="主视觉图片" />
-        </div>
-        <div class="hero-tag">图片说明：这里可以写一句说明这张图的文字。</div>
-      </div>
-    </section>
+      <div class="panel-overlay-dim"></div>
 
-    <!-- 三个图片+文字的卡片 -->
-    <section class="section" id="works">
-      <h2 class="section-title">图片卡片展示区</h2>
-      <p class="section-subtitle">
-        这里可以用三张图片分别展示三个内容板块，例如“项目一 / 设计一 / 照片一”等。
-      </p>
-
-      <div class="card-grid">
-        <!-- 卡片1 -->
-        <div class="card">
-          <div class="card-image">
-            <img src="images/pic1.jpg" alt="图片一" />
-          </div>
-          <div class="card-title">标题一：可以是一个项目名称</div>
-          <div class="card-text">
-            简要说明这一块内容，比如项目背景、设计说明、或这一组图片的主题。
-          </div>
-        </div>
-
-        <!-- 卡片2 -->
-        <div class="card">
-          <div class="card-image">
-            <img src="images/pic2.jpg" alt="图片二" />
-          </div>
-          <div class="card-title">标题二：另一项内容</div>
-          <div class="card-text">
-            可以写一点更细的文字描述，比如你承担的角色、使用的工具、最后的成效等等。
-          </div>
-        </div>
-
-        <!-- 卡片3 -->
-        <div class="card">
-          <div class="card-image">
-            <img src="images/pic3.jpg" alt="图片三" />
-          </div>
-          <div class="card-title">标题三：自由发挥</div>
-          <div class="card-text">
-            你也可以写成一句话slogan式的描述，让整体风格更“海报感”“宣传页感”。
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 图 + 文组合区 -->
-    <section class="section">
-      <h2 class="section-title">图片 + 文字排版区</h2>
-      <p class="section-subtitle">
-        一边是大图，一边是详细文案，可以用来讲一个重点故事、一个核心项目或一段经历。
-      </p>
-
-      <div class="image-text">
-        <div>
-          <img src="images/focus.jpg" alt="重点图片" style="border-radius: 18px;" />
-        </div>
-
-        <div class="image-text-block">
-          <h3 class="image-text-title">这里是重点内容的标题</h3>
-          <p class="image-text-body">
-            这一块可以写得稍微长一点，讲清楚一个故事：比如项目从哪里开始、你遇到了什么问题、是怎么一步步解决的、最后的成果是什么。
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">WELCOME</div>
+          <h1>夜色被点亮的那一刻<br>故事已经开始。</h1>
+          <p>
+            BMW THE 3
+           
           </p>
-          <p class="image-text-body">
-            你也可以用这个版块来展示课程内容、活动回顾、科研经历、作品设计思路等等。
-          </p>
+        </div>
+      </div>
 
-          <div class="image-text-tags">
-            <span class="tag">关键词1</span>
-            <span class="tag">关键词2</span>
-            <span class="tag">关键词3</span>
+      <div class="scroll-tip">
+        向下滚动
+        <span>⌄</span>
+      </div>
+    </section>
+
+    <!-- 第二幕：竖图滚动 + 顶部遮罩 + 中间文字 -->
+    <section
+      class="panel panel-center second-panel"
+      style="--overlay-height: 50%;"  <!-- 最终顶部阴影高度为 50% -->
+    >
+      <div class="second-panel-inner">
+
+        <!-- 背景图：竖图 6.jpg -->
+        <div
+          class="panel-bg bg-scene1"
+          id="secondBg"
+          style="background-image: url('images/6.jpg');"
+        ></div>
+
+        <div class="panel-overlay-dim"></div>
+
+        <!-- 顶部渐变阴影 -->
+        <div class="overlay-vertical overlay-top" id="secondOverlay"></div>
+
+        <div class="panel-content">
+          <div class="panel-text-box" id="secondText">
+            <div class="sub">SCENE 1</div>
+            <h2>当光线与线条对话<br>力量便有了温度。</h2>
+            <p>
+             夕阳拉长了影子，也拉开了她的姿态。
+            </p>
           </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 第三幕：右侧渐黑 + 右侧文字 -->
+    <section
+      class="panel panel-right"
+      style="--overlay-width: 55%;"  <!-- 右侧黑色区域大小 -->
+    >
+      <div class="panel-bg bg-scene2" style="background-image: url('images/2.jpg');"></div>
+      <div class="panel-overlay-dim"></div>
+      <div class="overlay-horizontal overlay-right"></div>
+
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">SCENE 2</div>
+          <h2>每一处肌理<br>都是运动的礼仪</h2>
+          <p>
+            紧致，把空气变成速度。
+          </p>
         </div>
       </div>
     </section>
 
-    <!-- 联系方式 / 页脚 -->
-    <section class="section" id="contact">
-      <h2 class="section-title">联系信息</h2>
-      <p class="section-subtitle">
-        可以放邮箱、公众号、网站、学校或工作单位等信息。
-      </p>
-      <p style="font-size: 14px; color: #555; margin-top: 4px;">
-        邮箱：yourname@example.com<br />
-        其他：可以放一句你的座右铭或者个人签名。
-      </p>
+    <!-- 第四幕：左侧渐黑 + 左侧文字 -->
+    <section
+      class="panel panel-left"
+      style="--overlay-width: 55%;"  <!-- 左侧黑色区域大小 -->
+    >
+      <div class="panel-bg bg-scene3" style="background-image: url('images/1.jpg');"></div>
+      <div class="panel-overlay-dim"></div>
+      <div class="overlay-horizontal overlay-left"></div>
+
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">SCENE 3</div>
+          <h2>一个拐角<br>半个世纪的坚持</h2>
+          <p>
+            霍氏拐角不是造型，是基因。
+          </p>
+        </div>
+      </div>
     </section>
 
-    <footer>
-      © 2025 你的名字 · 这个网页由我自己设计与制作
-    </footer>
+    <!-- 第五幕：右侧渐黑 + 右侧文字 -->
+    <section
+      class="panel panel-right"
+      style="--overlay-width: 55%;"  <!-- 右侧黑色区域大小 -->
+    >
+      <div class="panel-bg bg-scene4" style="background-image: url('images/3.jpg');"></div>
+      <div class="panel-overlay-dim"></div>
+      <div class="overlay-horizontal overlay-right"></div>
+
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">SCENE 4</div>
+          <h2>后视镜里的世界<br>越来越远的道别</h2>
+          <p>
+            前方永远值得比回头更坚定。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第六幕：左侧渐黑 + 左侧文字 -->
+    <section
+      class="panel panel-left"
+      style="--overlay-width: 55%;"  <!-- 左侧黑色区域大小 -->
+    >
+      <div class="panel-bg bg-scene5" style="background-image: url('images/5.jpg');"></div>
+      <div class="panel-overlay-dim"></div>
+      <div class="overlay-horizontal overlay-left"></div>
+
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">SCENE 5</div>
+          <h2>光的路径<br>被雕刻成锋芒</h2>
+          <p>
+            线条被点亮，红色的脉冲，是速度留下的签名。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第七幕：左侧渐黑 + 左侧文字 -->
+    <section
+      class="panel panel-left"
+      style="--overlay-width: 55%;"  <!-- 左侧黑色区域大小 -->
+    >
+      <div class="panel-bg bg-scene5" style="background-image: url('images/9.jpg');"></div>
+      <div class="panel-overlay-dim"></div>
+      <div class="overlay-horizontal overlay-left"></div>
+
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">SCENE 5</div>
+          <h2>金属的秩序<br>就是速度的秩序</h2>
+          <p>
+            每一颗螺栓，都在为速度执行使命。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第八幕：中间从两侧收束的深色遮罩 + 居中白字 -->
+    <section
+      class="panel panel-center"
+      style="--overlay-width: 50%;"  <!-- 中间黑色舞台的最终宽度 -->
+    >
+      <div class="panel-bg bg-scene6" style="background-image: url('images/7.jpg');"></div>
+      <div class="panel-overlay-dim"></div>
+      <div class="overlay-center-horizontal"></div>
+
+      <div class="panel-content">
+        <div class="panel-text-box">
+          <div class="sub">SCENE 6</div>
+          <h2>下一秒<br>
+	方向由你决定
+	</h2>
+          <p>
+            BMW<br>THE ULTIMATE DRIVING MACHINE
+          </p>
+        </div>
+      </div>
+    </section>
+
   </div>
+
+  <!-- JS：滚动激活 + 第二幕特殊滚动 + 视频逻辑 -->
+  <script>
+    // ========= 1. 通用：滚动激活每一幕（控制遮罩展开 & 文字淡入） =========
+    const panels = document.querySelectorAll('.panel');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const panel = entry.target;
+          // 第二幕（.second-panel）不用通用 .active 动画来控制遮罩和文字，由下面单独逻辑处理
+          if (panel.classList.contains('second-panel')) {
+            return;
+          }
+
+          if (entry.isIntersecting) {
+            panel.classList.add('active');
+          } else {
+            panel.classList.remove('active');
+          }
+        });
+      },
+      {
+        threshold: 0.5
+      }
+    );
+    panels.forEach((panel) => observer.observe(panel));
+
+    // ========= 2. 第二幕特殊逻辑：竖图滚动 + 顶部遮罩 + 文本淡入 =========
+    const secondPanel = document.querySelector('.second-panel');
+    const secondBg   = document.getElementById('secondBg');
+    const secondOverlay = document.getElementById('secondOverlay');
+    const secondText = document.getElementById('secondText');
+
+    function updateSecondPanelOnScroll() {
+      if (!secondPanel || !secondBg || !secondOverlay || !secondText) return;
+
+      const rect = secondPanel.getBoundingClientRect();
+      const sectionHeight = secondPanel.offsetHeight;  // 约 3 * 视口高度
+      const viewportHeight = window.innerHeight;
+
+      const distanceInSection = Math.min(
+        Math.max(-rect.top, 0),
+        sectionHeight - viewportHeight
+      );
+
+      const maxScroll = sectionHeight - viewportHeight;
+      if (maxScroll <= 0) return;
+
+      const progress = distanceInSection / maxScroll;
+
+      if (progress <= 0) {
+        secondBg.style.backgroundPosition = '50% 0%';
+        secondOverlay.style.height = '0%';
+        secondText.style.opacity = '0';
+        secondText.style.transform = 'translateY(20px)';
+        return;
+      }
+
+      const phaseSplit = 0.6;
+
+      if (progress <= phaseSplit) {
+        const t = progress / phaseSplit;  // 0 ~ 1
+        const bgPosY = t * 100;          // 0% -> 100%
+        secondBg.style.backgroundPosition = `50% ${bgPosY}%`;
+
+        secondOverlay.style.height = '0%';
+        secondText.style.opacity = '0';
+        secondText.style.transform = 'translateY(20px)';
+      } else {
+        secondBg.style.backgroundPosition = '50% 100%';
+
+        const t = (progress - phaseSplit) / (1 - phaseSplit); // 0 ~ 1
+        const overlayHeight = 50 * t; // 最多覆盖 50% 高度
+
+        secondOverlay.style.height = `${overlayHeight}%`;
+        secondText.style.opacity = String(t);
+        const translateY = 20 * (1 - t);
+        secondText.style.transform = `translateY(${translateY}px)`;
+      }
+    }
+
+    window.addEventListener('scroll', () => {
+      updateSecondPanelOnScroll();
+    });
+    window.addEventListener('load', () => {
+      updateSecondPanelOnScroll();
+    });
+
+    // ========= 3. 顶部视频逻辑：初次自动播放 + 回到顶部重播一次 =========
+    const heroVideo = document.getElementById('heroVideo');
+    let hasPlayedOnce = false;
+    let isReplayingFromScroll = false;
+    let lastScrollY = window.scrollY;
+
+    window.addEventListener('load', () => {
+      if (heroVideo) {
+        heroVideo.currentTime = 0;
+        heroVideo.play().catch(() => {});
+      }
+    });
+
+    if (heroVideo) {
+      heroVideo.addEventListener('ended', () => {
+        setTimeout(() => {
+          heroVideo.pause();
+          heroVideo.currentTime = 1;
+          hasPlayedOnce = true;
+          isReplayingFromScroll = false;
+        }, 50);
+      });
+    }
+
+    window.addEventListener('scroll', () => {
+      const currentY = window.scrollY;
+      const scrollingUp = currentY < lastScrollY;
+
+      if (
+        scrollingUp &&
+        currentY <= 10 &&
+        hasPlayedOnce &&
+        !isReplayingFromScroll &&
+        heroVideo
+      ) {
+        isReplayingFromScroll = true;
+        heroVideo.currentTime = 0;
+        heroVideo.play().catch(() => {});
+      }
+
+      lastScrollY = currentY;
+    });
+  </script>
 </body>
 </html>
