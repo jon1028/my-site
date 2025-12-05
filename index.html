@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>我的展示页面</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* 全局样式 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f5f5f7;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    /* 页面整体宽度控制 */
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    /* 顶部导航 / 标题区 */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 16px;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .nav {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .nav a:hover {
+      color: #111;
+    }
+
+    /* Hero 主视觉区：大图 + 文案 */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: center;
+      padding: 24px 0 32px;
+    }
+
+    .hero-text {
+      padding-right: 8px;
+    }
+
+    .hero-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .hero-subtitle {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: none;
+    }
+
+    .btn-primary {
+      background: #111827;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #000;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      border-color: #d4d4d8;
+      color: #444;
+      background: #fff;
+    }
+
+    .btn-secondary:hover {
+      border-color: #a1a1aa;
+      transform: translateY(-1px);
+    }
+
+    .hero-note {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .hero-image-wrapper {
+      background: #fff;
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    }
+
+    .hero-image {
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .hero-tag {
+      position: relative;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+      padding-left: 10px;
+    }
+
+    .hero-tag::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 7px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    /* Section 标题 */
+    .section {
+      margin-top: 36px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 18px;
+    }
+
+    /* 三列卡片区：图 + 文案 */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-image {
+      border-radius: 12px;
+      overflow: hidden;
+      height: 150px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-text {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* 图 + 文组合区 */
+    .image-text {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 20px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .image-text-block {
+      background: #fff;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .image-text-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .image-text-body {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .image-text-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f4f4f5;
+      color: #555;
+    }
+
+    /* 页脚 */
+    footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+    }
+
+    /* 响应式：在手机上变成单列布局 */
+    @media (max-width: 768px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-text {
+        order: 2;
+      }
+
+      .hero-image-wrapper {
+        order: 1;
+      }
+
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .image-text {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 顶部 -->
+    <header>
+      <div class="logo">MY PAGE</div>
+      <nav class="nav">
+        <a href="#about">关于</a>
+        <a href="#works">作品</a>
+        <a href="#contact">联系</a>
+      </nav>
+    </header>
+
+    <!-- 主视觉区 -->
+    <section class="hero" id="about">
+      <div class="hero-text">
+        <h1 class="hero-title">这里是你的标题文案区域</h1>
+        <p class="hero-subtitle">
+          用一两段简短的文字介绍你自己 / 你的项目 / 你想展示的内容。
+          比如：这个网页用来展示我的设计作品、科研项目或者课程信息。
+        </p>
+        <div class="hero-buttons">
+          <button class="btn-primary">主要按钮</button>
+          <button class="btn-secondary">次要按钮</button>
+        </div>
+        <p class="hero-note">
+          提示文案：你可以在这里放一句小提示，比如“向下滑查看更多内容”。
+        </p>
+      </div>
+
+      <div class="hero-image-wrapper">
+        <!-- 把 src 替换成你的大图，比如 hero.jpg -->
+        <div class="hero-image">
+          <img src="images/hero.jpg" alt="主视觉图片" />
+        </div>
+        <div class="hero-tag">图片说明：这里可以写一句说明这张图的文字。</div>
+      </div>
+    </section>
+
+    <!-- 三个图片+文字的卡片 -->
+    <section class="section" id="works">
+      <h2 class="section-title">图片卡片展示区</h2>
+      <p class="section-subtitle">
+        这里可以用三张图片分别展示三个内容板块，例如“项目一 / 设计一 / 照片一”等。
+      </p>
+
+      <div class="card-grid">
+        <!-- 卡片1 -->
+        <div class="card">
+          <div class="card-image">
+            <img src="images/pic1.jpg" alt="图片一" />
+          </div>
+          <div class="card-title">标题一：可以是一个项目名称</div>
+          <div class="card-text">
+            简要说明这一块内容，比如项目背景、设计说明、或这一组图片的主题。
+          </div>
+        </div>
+
+        <!-- 卡片2 -->
+        <div class="card">
+          <div class="card-image">
+            <img src="images/pic2.jpg" alt="图片二" />
+          </div>
+          <div class="card-title">标题二：另一项内容</div>
+          <div class="card-text">
+            可以写一点更细的文字描述，比如你承担的角色、使用的工具、最后的成效等等。
+          </div>
+        </div>
+
+        <!-- 卡片3 -->
+        <div class="card">
+          <div class="card-image">
+            <img src="images/pic3.jpg" alt="图片三" />
+          </div>
+          <div class="card-title">标题三：自由发挥</div>
+          <div class="card-text">
+            你也可以写成一句话slogan式的描述，让整体风格更“海报感”“宣传页感”。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 图 + 文组合区 -->
+    <section class="section">
+      <h2 class="section-title">图片 + 文字排版区</h2>
+      <p class="section-subtitle">
+        一边是大图，一边是详细文案，可以用来讲一个重点故事、一个核心项目或一段经历。
+      </p>
+
+      <div class="image-text">
+        <div>
+          <img src="images/focus.jpg" alt="重点图片" style="border-radius: 18px;" />
+        </div>
+
+        <div class="image-text-block">
+          <h3 class="image-text-title">这里是重点内容的标题</h3>
+          <p class="image-text-body">
+            这一块可以写得稍微长一点，讲清楚一个故事：比如项目从哪里开始、你遇到了什么问题、是怎么一步步解决的、最后的成果是什么。
+          </p>
+          <p class="image-text-body">
+            你也可以用这个版块来展示课程内容、活动回顾、科研经历、作品设计思路等等。
+          </p>
+
+          <div class="image-text-tags">
+            <span class="tag">关键词1</span>
+            <span class="tag">关键词2</span>
+            <span class="tag">关键词3</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 联系方式 / 页脚 -->
+    <section class="section" id="contact">
+      <h2 class="section-title">联系信息</h2>
+      <p class="section-subtitle">
+        可以放邮箱、公众号、网站、学校或工作单位等信息。
+      </p>
+      <p style="font-size: 14px; color: #555; margin-top: 4px;">
+        邮箱：yourname@example.com<br />
+        其他：可以放一句你的座右铭或者个人签名。
+      </p>
+    </section>
+
+    <footer>
+      © 2025 你的名字 · 这个网页由我自己设计与制作
+    </footer>
+  </div>
+</body>
+</html>
